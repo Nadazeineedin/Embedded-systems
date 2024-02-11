@@ -1,0 +1,64 @@
+MPLINK 4.49, Linker
+Linker Map File - Created Sun Dec 25 22:30:37 2022
+
+                                 Section Info
+                  Section       Type    Address   Location Size(Bytes)
+                ---------  ---------  ---------  ---------  ---------
+                   .org_0       code   0x000000    program   0x000000
+                   .org_1       code   0x000000    program   0x000004
+                   .org_2       code   0x000004    program   0x000158
+
+
+
+                              Program Memory Usage 
+                               Start         End      
+                           ---------   ---------      
+                            0x000000    0x000001      
+                            0x000004    0x0000af      
+            174 out of 1094 program addresses used, program memory utilization is 15%
+
+
+
+                              Symbols - Sorted by Name
+                     Name    Address   Location    Storage File                     
+                ---------  ---------  ---------  --------- ---------                
+                   Finish   0x0000af    program     static C:\Users\Nada\Downloads\Assignment.asm
+                 Half_min   0x000088    program     static C:\Users\Nada\Downloads\Assignment.asm
+                    HeatA   0x000065    program     static C:\Users\Nada\Downloads\Assignment.asm
+                   HeatBC   0x000076    program     static C:\Users\Nada\Downloads\Assignment.asm
+                  INT_SVC   0x00009a    program     static C:\Users\Nada\Downloads\Assignment.asm
+                  Initial   0x00000b    program     static C:\Users\Nada\Downloads\Assignment.asm
+                     LOOP   0x00006d    program     static C:\Users\Nada\Downloads\Assignment.asm
+                    LOOP1   0x00007e    program     static C:\Users\Nada\Downloads\Assignment.asm
+                    LOOP2   0x000090    program     static C:\Users\Nada\Downloads\Assignment.asm
+                     Main   0x000005    program     static C:\Users\Nada\Downloads\Assignment.asm
+                 MainLoop   0x000006    program     static C:\Users\Nada\Downloads\Assignment.asm
+             Start_System   0x00001d    program     static C:\Users\Nada\Downloads\Assignment.asm
+                  StatusA   0x000023    program     static C:\Users\Nada\Downloads\Assignment.asm
+                  StatusB   0x00003b    program     static C:\Users\Nada\Downloads\Assignment.asm
+                  StatusC   0x000051    program     static C:\Users\Nada\Downloads\Assignment.asm
+                        X   0x0000a7    program     static C:\Users\Nada\Downloads\Assignment.asm
+
+
+
+                              Symbols - Sorted by Address
+                     Name    Address   Location    Storage File                     
+                ---------  ---------  ---------  --------- ---------                
+                     Main   0x000005    program     static C:\Users\Nada\Downloads\Assignment.asm
+                 MainLoop   0x000006    program     static C:\Users\Nada\Downloads\Assignment.asm
+                  Initial   0x00000b    program     static C:\Users\Nada\Downloads\Assignment.asm
+             Start_System   0x00001d    program     static C:\Users\Nada\Downloads\Assignment.asm
+                  StatusA   0x000023    program     static C:\Users\Nada\Downloads\Assignment.asm
+                  StatusB   0x00003b    program     static C:\Users\Nada\Downloads\Assignment.asm
+                  StatusC   0x000051    program     static C:\Users\Nada\Downloads\Assignment.asm
+                    HeatA   0x000065    program     static C:\Users\Nada\Downloads\Assignment.asm
+                     LOOP   0x00006d    program     static C:\Users\Nada\Downloads\Assignment.asm
+                   HeatBC   0x000076    program     static C:\Users\Nada\Downloads\Assignment.asm
+                    LOOP1   0x00007e    program     static C:\Users\Nada\Downloads\Assignment.asm
+                 Half_min   0x000088    program     static C:\Users\Nada\Downloads\Assignment.asm
+                    LOOP2   0x000090    program     static C:\Users\Nada\Downloads\Assignment.asm
+                  INT_SVC   0x00009a    program     static C:\Users\Nada\Downloads\Assignment.asm
+                        X   0x0000a7    program     static C:\Users\Nada\Downloads\Assignment.asm
+                   Finish   0x0000af    program     static C:\Users\Nada\Downloads\Assignment.asm
+
+

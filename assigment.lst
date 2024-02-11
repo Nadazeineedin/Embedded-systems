@@ -1,0 +1,772 @@
+MPASM  5.51                     ASSIGMENT.ASM   12-19-2022  16:26:40         PAGE  1
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+                      00001 ;**********************************************************
+                      00002 ; This program control a bottle labeling and packing machine.
+                      00003 ; Photocell sensor is connected into RB0
+                      00004 ; 7-Segments is connected to PORTB (We connect RB1 to a, RB2 to b ???.And RB7 to g)
+                      00005 ; Digits selection of bottles number 7-Segments is connected to RA0
+                      00006 ; Digits selection of cartoon number 7-Segments is connected to RA1
+                      00007 ; Conveyor belt motor is connected to RA2 (Connect to LED1 on board)
+                      00008 ; Label actuator is connected to RA3(Connect to LED2 on board)
+                      00009 ; START pushbutton is connected to RA4
+                      00010 ; The program uses a PIC16F84A running at crystal oscillator of frequency 4MHz. 
+                      00011 ;**********************************************************
+                      00012  include "p16f84A.inc"
+                      00001         LIST
+                      00002 
+                      00003 ;==========================================================================
+                      00004 ;  MPASM PIC16F84A processor include
+                      00005 ; 
+                      00006 ;  (c) Copyright 1999-2013 Microchip Technology, All rights reserved
+                      00007 ;==========================================================================
+                      00008 
+                      00208         LIST
+                      00013 ;**********************************************************
+  0000000C            00014 DCounter1 EQU 0X0C
+  0000000D            00015 DCounter2 EQU 0X0D
+  0000000E            00016 DCounter3 EQU 0X0E
+  0000000F            00017 DCounter4 EQU 0X0F
+  00000020            00018 DCounter10 EQU 0X20
+  00000021            00019 DCounter20 EQU 0X21
+  00000022            00020 DCounter30 EQU 0X22
+  00000023            00021 DCounter40 EQU 0X23
+  00000024            00022 HEATER     EQU 0X24
+  00000025            00023 COUNTER_HEATER EQU 0X25
+  00000026            00024 DCounter100 EQU 0X26
+  00000027            00025 DCounter200 EQU 0X27
+  00000028            00026 DCounter300 EQU 0X28
+  00000029            00027 DCounter400 EQU 0X29
+  00000030            00028 DCounter1000 EQU 0X30
+  00000031            00029 DCounter2000 EQU 0X31
+  00000032            00030 DCounter3000 EQU 0X32
+  00000033            00031 DCounter4000 EQU 0X33
+  00000034            00032 DCounter11 EQU 0X34
+  00000035            00033 DCounter22 EQU 0X35
+  00000036            00034 DCounter33 EQU 0X36
+  00000037            00035 DCounter44 EQU 0X37
+                      00036 ; Macro definitions
+                      00037 
+                      00038 push    macro
+                      00039 
+                      00040         movwf           WTemp           ; WTemp must be reserved in all banks
+                      00041         swapf           STATUS,W                ; store in W without affecting status bits
+                      00042         banksel StatusTemp              ; select StatusTemp bank
+                      00043         movwf           StatusTemp              ; save STATUS
+                      00044         endm
+MPASM  5.51                     ASSIGMENT.ASM   12-19-2022  16:26:40         PAGE  2
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+                      00045 
+                      00046 pop     macro
+                      00047 
+                      00048         banksel StatusTemp              ; point to StatusTemp bank
+                      00049         swapf           StatusTemp,W            ; unswap STATUS nibbles into W  
+                      00050         movwf           STATUS          ; restore STATUS
+                      00051         swapf           WTemp,F         ; unswap W nibbles
+                      00052         swapf           WTemp,W         ; restore W without affecting STATUS
+                      00053         endm
+                      00054 ;**********************************************************
+                      00055 ; User-defined variables
+                      00056         cblock          0x0C            ; bank 0 assignments
+  0000000C            00057         WTemp   
+  0000000D            00058         StatusTemp
+                      00059         ;????                   Add all variables here. 
+                      00060         endc
+                      00061 ;**********************************************************
+                      00062 ; Start of executable code
+0000                  00063         org     0x00            ;Reset vector
+0000   0000           00064         nop
+0001   2805           00065         goto            Main            
+0004                  00066         org     0x04                    ;
+0004   28AF           00067         goto            INT_SVC
+                      00068         ;;;;;;; Main program ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+0005                  00069 Main
+0005   2009           00070         call    Initial         ;Initialize everything
+0006                  00071 MainLoop
+Error[113]  : Symbol not previously defined (Bottle_Number)
+0006   2000           00072         call    Bottle_Number                   ;Check if the number of bottles reaches to nine
+Error[113]  : Symbol not previously defined (Caroon_Number)
+0007   2000           00073         call            Caroon_Number           ;Check if the number of packing bottles reaches to nine.
+0008   2806           00074         goto    MainLoop                        ;Do it again
+                      00075 ;;;;;;; Initial subroutine ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+                      00076 ; This subroutine performs all initializations of variables and registers.
+0009                  00077 Initial 
+Warning[205]: Found directive in column 1. (banksel)
+0009   1683           00078 banksel TRISA
+Warning[203]: Found opcode in column 1. (BSF)
+Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
+000A   1405           00079 BSF TRISA,RA0 ; SET RA0 AS INPUT
+Warning[203]: Found opcode in column 1. (BCF)
+Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
+000B   1085           00080 BCF TRISA,RA1 ;SET RA1 AS OUTPUT
+Warning[203]: Found opcode in column 1. (BSF)
+Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
+000C   1505           00081 BSF TRISA,RA2 ;SET RA2 AS INPUT
+Warning[203]: Found opcode in column 1. (BCF)
+Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
+000D   1185           00082 BCF TRISA,RA3 ;SET RA3 AS OUTPUT_PUMPA
+Warning[203]: Found opcode in column 1. (BCF)
+Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
+000E   1205           00083 BCF TRISA,RA4 ;SER RA4 AS OUTPUT
+Warning[203]: Found opcode in column 1. (BCF)
+MPASM  5.51                     ASSIGMENT.ASM   12-19-2022  16:26:40         PAGE  3
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
+Error[113]  : Symbol not previously defined (RA5)
+000F   1005           00084 BCF TRISA,RA5 ;SET RA5 AS OUTPUT_HEATER
+Warning[203]: Found opcode in column 1. (BCF)
+Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
+Error[113]  : Symbol not previously defined (RA6)
+0010   1005           00085 BCF TRISA,RA6 ;SET RA6 AS OUTPUT_MIXER
+Warning[203]: Found opcode in column 1. (BSF)
+Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
+0011   1406           00086 BSF TRISB,RB0 ;SET RB0 AS INPUT 
+Warning[203]: Found opcode in column 1. (BSF)
+Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
+0012   1486           00087 BSF TRISB,RB1 ;SET RB1 AS INPUT 
+Warning[203]: Found opcode in column 1. (MOVLW)
+0013   3015           00088 MOVLW D'21'
+Warning[203]: Found opcode in column 1. (MOVWF)
+0014   00A4           00089 MOVWF HEATER
+0015   0008           00090         Return
+                      00091 ;;;;;;; Bottle_Number subroutine ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+                      00092 ; This subroutine Test if the number of bottles reaches to nine. 
+0016                  00093 START_MACHINE 
+Warning[203]: Found opcode in column 1. (BTFSS)
+0016   1C00           00094 BTFSS,RA0
+Warning[203]: Found opcode in column 1. (GOTO)
+0017   28BB           00095 GOTO FINISH
+Warning[203]: Found opcode in column 1. (GOTO)
+0018   281A           00096 GOTO LEDRUN
+0019   0008           00097         Return
+                      00098 ;**********************************************************
+                      00099 ;;;;;;; Caroon_Number subroutine ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+                      00100 ; This subroutine Test if the number of packing bottles reaches to nine.
+001A                  00101 LEDRUN
+Warning[205]: Found directive in column 1. (BANKSEL)
+001A   1283           00102 BANKSEL PORTA
+Warning[203]: Found opcode in column 1. (BCF)
+001B   1085           00103 BCF PORTA,RA1
+Warning[203]: Found opcode in column 1. (CALL)
+001C   201E           00104 CALL SELECTION
+001D   0008           00105         Return
+                      00106 ;**********************************************************
+001E                  00107 SELECTION
+Warning[205]: Found directive in column 1. (BANKSEL)
+001E   1283           00108 BANKSEL PORTA
+Warning[203]: Found opcode in column 1. (BTFSC)
+001F   1905           00109 BTFSC PORTA,RA2
+Warning[203]: Found opcode in column 1. (GOTO)
+Error[113]  : Symbol not previously defined (STATUSA)
+0020   2800           00110 GOTO STATUSA
+Warning[203]: Found opcode in column 1. (GOTO)
+Error[113]  : Symbol not previously defined (OUTHERWISE)
+0021   2800           00111 GOTO OUTHERWISE
+                      00112 
+Warning[203]: Found opcode in column 1. (RETURN)
+MPASM  5.51                     ASSIGMENT.ASM   12-19-2022  16:26:40         PAGE  4
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+0022   0008           00113 RETURN
+                      00114 ;**********************************************************
+0023                  00115 STATUS_A
+Warning[203]: Found opcode in column 1. (BCF)
+0023   1185           00116 BCF PORTA,RA3 ; SET AS HIGHT PUMP1
+Warning[203]: Found opcode in column 1. (CALL)
+0024   2088           00117 CALL DELAY_FLUIDA_1
+Warning[203]: Found opcode in column 1. (BCF)
+0025   1205           00118 BCF PORTA,RA4 ;SET AS HIGHT PUMP2
+Warning[203]: Found opcode in column 1. (CALL)
+0026   209A           00119 CALL DELLY_FLUID_2
+Warning[203]: Found opcode in column 1. (MOVLW)
+0027   300D           00120 MOVLW D'13'
+Warning[203]: Found opcode in column 1. (MOVWF)
+0028   00A5           00121 MOVWF COUNTER_HEATER
+Warning[203]: Found opcode in column 1. (BCF)
+Error[113]  : Symbol not previously defined (RA5)
+0029   1005           00122 BCF PORTA,RA5 ;SET HIGHT HEATER
+Warning[203]: Found opcode in column 1. (BCF)
+Error[113]  : Symbol not previously defined (RA6)
+002A   1005           00123 BCF PORTA,RA6 ;SET HIGHT MIXER
+Warning[203]: Found opcode in column 1. (CALL)
+002B   2075           00124 CALL DELAY_HAETER
+002C                  00125 LOOP_HEATER
+Warning[203]: Found opcode in column 1. (MOVLW)
+002C   3003           00126 MOVLW D'3'
+Warning[203]: Found opcode in column 1. (ADDWF)
+Message[305]: Using default destination of 1 (file).
+002D   07A4           00127 ADDWF HEATER
+Warning[203]: Found opcode in column 1. (DECFSZ)
+Message[305]: Using default destination of 1 (file).
+002E   0BA5           00128 DECFSZ COUNTER_HEATER
+Warning[203]: Found opcode in column 1. (GOTO)
+002F   282C           00129 GOTO LOOP_HEATER
+Warning[203]: Found opcode in column 1. (GOTO)
+Error[113]  : Symbol not previously defined (FINIH)
+0030   2800           00130 GOTO FINIH
+Warning[203]: Found opcode in column 1. (RETURN)
+0031   0008           00131 RETURN
+                      00132 ;**********************************************************
+0032                  00133 OTHERWISE 
+Warning[203]: Found opcode in column 1. (BTFSC)
+0032   1806           00134 BTFSC PORTB,RB0
+Warning[203]: Found opcode in column 1. (GOTO)
+0033   2835           00135 GOTO STATUSB
+Warning[203]: Found opcode in column 1. (GOTO)
+0034   2842           00136 GOTO STATUSC
+                      00137 ;**********************************************************
+0035                  00138 STATUSB
+Warning[203]: Found opcode in column 1. (BCF)
+0035   1185           00139 BCF PORTA,RA3 ;SET HIGHT PUMPA
+Warning[203]: Found opcode in column 1. (CALL)
+0036   2062           00140 CALL DELAY_STATUSB_FLUIDA
+MPASM  5.51                     ASSIGMENT.ASM   12-19-2022  16:26:40         PAGE  5
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+Warning[203]: Found opcode in column 1. (MOVLW)
+0037   3008           00141 MOVLW D'8'
+Warning[203]: Found opcode in column 1. (MOVWF)
+0038   00A5           00142 MOVWF COUNTER_HEATER
+Warning[203]: Found opcode in column 1. (BCF)
+Error[113]  : Symbol not previously defined (RA5)
+0039   1005           00143 BCF PORTA,RA5 ;SET HIGHT HEATER
+Warning[203]: Found opcode in column 1. (BCF)
+Error[113]  : Symbol not previously defined (RA6)
+003A   1005           00144 BCF PORTA,RA6 ;SET HIGHT MIXER
+Warning[203]: Found opcode in column 1. (CALL)
+003B   2075           00145 CALL DELAY_HAETER
+003C                  00146 LOOP_HEATER1
+Warning[203]: Found opcode in column 1. (MOVLW)
+003C   3003           00147 MOVLW D'3'
+Warning[203]: Found opcode in column 1. (ADDWF)
+Message[305]: Using default destination of 1 (file).
+003D   07A4           00148 ADDWF HEATER
+Warning[203]: Found opcode in column 1. (DECFSZ)
+Message[305]: Using default destination of 1 (file).
+003E   0BA5           00149 DECFSZ COUNTER_HEATER
+Warning[203]: Found opcode in column 1. (GOTO)
+003F   283C           00150 GOTO LOOP_HEATER1
+Warning[203]: Found opcode in column 1. (GOTO)
+Error[113]  : Symbol not previously defined (FINIH)
+0040   2800           00151 GOTO FINIH
+Warning[203]: Found opcode in column 1. (RETURN)
+0041   0008           00152 RETURN
+                      00153 ;**********************************************************
+0042                  00154 STATUSC
+Warning[203]: Found opcode in column 1. (BCF)
+0042   1185           00155 BCF PORTA,RA3 ;SET HIGHT PUMPA
+Warning[203]: Found opcode in column 1. (CALL)
+0043   209A           00156 CALL DELLY_FLUID_2 ; 120 SECOUND
+Warning[203]: Found opcode in column 1. (BCF)
+0044   1205           00157 BCF PORTA,RA4 ;SET AS HIGHT PUMP2
+Warning[203]: Found opcode in column 1. (CALL)
+0045   2051           00158 CALL DELAY_80S
+                      00159 ;****************INCREASE TO 45C
+Warning[203]: Found opcode in column 1. (MOVLW)
+0046   3008           00160 MOVLW D'8' 
+Warning[203]: Found opcode in column 1. (MOVWF)
+0047   00A5           00161 MOVWF COUNTER_HEATER
+Warning[203]: Found opcode in column 1. (BCF)
+Error[113]  : Symbol not previously defined (RA5)
+0048   1005           00162 BCF PORTA,RA5 ;SET HIGHT HEATER
+Warning[203]: Found opcode in column 1. (BCF)
+Error[113]  : Symbol not previously defined (RA6)
+0049   1005           00163 BCF PORTA,RA6 ;SET HIGHT MIXER
+Warning[203]: Found opcode in column 1. (CALL)
+004A   2075           00164 CALL DELAY_HAETER
+Error[116]  : Address label duplicated or different in second pass (LOOP_HEATER1)
+004B                  00165 LOOP_HEATER1
+MPASM  5.51                     ASSIGMENT.ASM   12-19-2022  16:26:40         PAGE  6
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+Warning[203]: Found opcode in column 1. (MOVLW)
+004B   3003           00166 MOVLW D'3'
+Warning[203]: Found opcode in column 1. (ADDWF)
+Message[305]: Using default destination of 1 (file).
+004C   07A4           00167 ADDWF HEATER
+Warning[203]: Found opcode in column 1. (DECFSZ)
+Message[305]: Using default destination of 1 (file).
+004D   0BA5           00168 DECFSZ COUNTER_HEATER
+Warning[203]: Found opcode in column 1. (GOTO)
+004E   283C           00169 GOTO LOOP_HEATER1
+Warning[203]: Found opcode in column 1. (GOTO)
+Error[113]  : Symbol not previously defined (FINIH)
+004F   2800           00170 GOTO FINIH
+Warning[203]: Found opcode in column 1. (RETURN)
+0050   0008           00171 RETURN
+                      00172 
+                      00173 ;;;;;;; Delay subroutine ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+                      00174 ; This subroutine to get a delay with 80 Sec.
+0051                  00175 DELAY_80S
+Warning[203]: Found opcode in column 1. (MOVLW)
+0051   3099           00176 MOVLW 0X99
+Warning[203]: Found opcode in column 1. (MOVWF)
+0052   00B4           00177 MOVWF DCounter11
+Warning[203]: Found opcode in column 1. (MOVLW)
+0053   309A           00178 MOVLW 0X9a
+Warning[203]: Found opcode in column 1. (MOVWF)
+0054   00B5           00179 MOVWF DCounter22
+Warning[203]: Found opcode in column 1. (MOVLW)
+0055   30F7           00180 MOVLW 0Xf7
+Warning[203]: Found opcode in column 1. (MOVWF)
+0056   00B6           00181 MOVWF DCounter33
+Warning[203]: Found opcode in column 1. (MOVLW)
+0057   3004           00182 MOVLW 0X04
+Warning[203]: Found opcode in column 1. (MOVWF)
+0058   00B7           00183 MOVWF DCounter44
+0059                  00184 LOOP
+Warning[203]: Found opcode in column 1. (DECFSZ)
+0059   0BB4           00185 DECFSZ DCounter11, 1
+Warning[203]: Found opcode in column 1. (GOTO)
+005A   2859           00186 GOTO LOOP
+Warning[203]: Found opcode in column 1. (DECFSZ)
+005B   0BB5           00187 DECFSZ DCounter22, 1
+Warning[203]: Found opcode in column 1. (GOTO)
+005C   2859           00188 GOTO LOOP
+Warning[203]: Found opcode in column 1. (DECFSZ)
+005D   0BB6           00189 DECFSZ DCounter33, 1
+Warning[203]: Found opcode in column 1. (GOTO)
+005E   2859           00190 GOTO LOOP
+Warning[203]: Found opcode in column 1. (DECFSZ)
+005F   0BB7           00191 DECFSZ DCounter44, 1
+Warning[203]: Found opcode in column 1. (GOTO)
+0060   2859           00192 GOTO LOOP
+Warning[203]: Found opcode in column 1. (RETURN)
+MPASM  5.51                     ASSIGMENT.ASM   12-19-2022  16:26:40         PAGE  7
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+0061   0008           00193 RETURN
+                      00194 ;;;;;;; Delay subroutine ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+                      00195 ; This subroutine to get a delay with 180 Sec.
+0062                  00196 DELAY_STATUSB_FLUIDA
+Warning[203]: Found opcode in column 1. (MOVLW)
+0062   309D           00197 MOVLW 0X9d
+Warning[203]: Found opcode in column 1. (MOVWF)
+0063   00B0           00198 MOVWF DCounter1000
+Warning[203]: Found opcode in column 1. (MOVLW)
+0064   30DA           00199 MOVLW 0Xda
+Warning[203]: Found opcode in column 1. (MOVWF)
+0065   00B1           00200 MOVWF DCounter2000
+Warning[203]: Found opcode in column 1. (MOVLW)
+0066   30EB           00201 MOVLW 0Xeb
+Warning[203]: Found opcode in column 1. (MOVWF)
+0067   00B2           00202 MOVWF DCounter3000
+Warning[203]: Found opcode in column 1. (MOVLW)
+0068   3009           00203 MOVLW 0X09
+Warning[203]: Found opcode in column 1. (MOVWF)
+0069   00B3           00204 MOVWF DCounter4000
+Error[116]  : Address label duplicated or different in second pass (LOOP)
+006A                  00205 LOOP
+Warning[203]: Found opcode in column 1. (DECFSZ)
+006A   0BB0           00206 DECFSZ DCounter1000, 1
+Warning[203]: Found opcode in column 1. (GOTO)
+006B   2859           00207 GOTO LOOP
+Warning[203]: Found opcode in column 1. (DECFSZ)
+006C   0BB1           00208 DECFSZ DCounter2000, 1
+Warning[203]: Found opcode in column 1. (GOTO)
+006D   2859           00209 GOTO LOOP
+Warning[203]: Found opcode in column 1. (DECFSZ)
+006E   0BB2           00210 DECFSZ DCounter3000, 1
+Warning[203]: Found opcode in column 1. (GOTO)
+006F   2859           00211 GOTO LOOP
+Warning[203]: Found opcode in column 1. (DECFSZ)
+0070   0BB3           00212 DECFSZ DCounter4000, 1
+Warning[203]: Found opcode in column 1. (GOTO)
+0071   2859           00213 GOTO LOOP
+Warning[203]: Found opcode in column 1. (NOP)
+0072   0000           00214 NOP
+Warning[203]: Found opcode in column 1. (NOP)
+0073   0000           00215 NOP
+Warning[203]: Found opcode in column 1. (RETURN)
+0074   0008           00216 RETURN
+                      00217 ;;;;;;; Delay subroutine ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+                      00218 ; This subroutine to get a delay with 45 Sec.
+0075                  00219 DELAY_HAETER
+Warning[203]: Found opcode in column 1. (MOVLW)
+0075   3063           00220 MOVLW 0X63
+Warning[203]: Found opcode in column 1. (MOVWF)
+0076   00A6           00221 MOVWF DCounter100
+Warning[203]: Found opcode in column 1. (MOVLW)
+0077   30B7           00222 MOVLW 0Xb7
+MPASM  5.51                     ASSIGMENT.ASM   12-19-2022  16:26:40         PAGE  8
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+Warning[203]: Found opcode in column 1. (MOVWF)
+0078   00A7           00223 MOVWF DCounter200
+Warning[203]: Found opcode in column 1. (MOVLW)
+0079   303B           00224 MOVLW 0X3b
+Warning[203]: Found opcode in column 1. (MOVWF)
+007A   00A8           00225 MOVWF DCounter300
+Warning[203]: Found opcode in column 1. (MOVLW)
+007B   3003           00226 MOVLW 0X03
+Warning[203]: Found opcode in column 1. (MOVWF)
+007C   00A9           00227 MOVWF DCounter400
+007D                  00228 LOOP3
+Warning[203]: Found opcode in column 1. (DECFSZ)
+007D   0BA6           00229 DECFSZ DCounter100, 1
+Warning[203]: Found opcode in column 1. (GOTO)
+007E   287D           00230 GOTO LOOP3
+Warning[203]: Found opcode in column 1. (DECFSZ)
+007F   0BA7           00231 DECFSZ DCounter200, 1
+Warning[203]: Found opcode in column 1. (GOTO)
+0080   287D           00232 GOTO LOOP3
+Warning[203]: Found opcode in column 1. (DECFSZ)
+0081   0BA8           00233 DECFSZ DCounter300, 1
+Warning[203]: Found opcode in column 1. (GOTO)
+0082   287D           00234 GOTO LOOP3
+Warning[203]: Found opcode in column 1. (DECFSZ)
+0083   0BA9           00235 DECFSZ DCounter400, 1
+Warning[203]: Found opcode in column 1. (GOTO)
+0084   287D           00236 GOTO LOOP3
+Warning[203]: Found opcode in column 1. (NOP)
+0085   0000           00237 NOP
+Warning[203]: Found opcode in column 1. (NOP)
+0086   0000           00238 NOP
+Warning[203]: Found opcode in column 1. (RETURN)
+0087   0008           00239 RETURN
+                      00240 
+                      00241 ;;;;;;; Delay subroutine ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+                      00242 ; This subroutine to get a delay with 90 Sec.
+0088                  00243 DELAY_FLUIDA_1
+Warning[203]: Found opcode in column 1. (MOVLW)
+0088   30CC           00244 MOVLW 0Xcc
+Warning[203]: Found opcode in column 1. (MOVWF)
+0089   008C           00245 MOVWF DCounter1
+Warning[203]: Found opcode in column 1. (MOVLW)
+008A   306D           00246 MOVLW 0X6d
+Warning[203]: Found opcode in column 1. (MOVWF)
+008B   008D           00247 MOVWF DCounter2
+Warning[203]: Found opcode in column 1. (MOVLW)
+008C   3076           00248 MOVLW 0X76
+Warning[203]: Found opcode in column 1. (MOVWF)
+008D   008E           00249 MOVWF DCounter3
+Warning[203]: Found opcode in column 1. (MOVLW)
+008E   3005           00250 MOVLW 0X05
+Warning[203]: Found opcode in column 1. (MOVWF)
+008F   008F           00251 MOVWF DCounter4
+MPASM  5.51                     ASSIGMENT.ASM   12-19-2022  16:26:40         PAGE  9
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+Error[116]  : Address label duplicated or different in second pass (LOOP)
+0090                  00252 LOOP
+Warning[203]: Found opcode in column 1. (DECFSZ)
+0090   0B8C           00253 DECFSZ DCounter1, 1
+Warning[203]: Found opcode in column 1. (GOTO)
+0091   2859           00254 GOTO LOOP
+Warning[203]: Found opcode in column 1. (DECFSZ)
+0092   0B8D           00255 DECFSZ DCounter2, 1
+Warning[203]: Found opcode in column 1. (GOTO)
+0093   2859           00256 GOTO LOOP
+Warning[203]: Found opcode in column 1. (DECFSZ)
+0094   0B8E           00257 DECFSZ DCounter3, 1
+Warning[203]: Found opcode in column 1. (GOTO)
+0095   2859           00258 GOTO LOOP
+Warning[203]: Found opcode in column 1. (DECFSZ)
+0096   0B8F           00259 DECFSZ DCounter4, 1
+Warning[203]: Found opcode in column 1. (GOTO)
+0097   2859           00260 GOTO LOOP
+Warning[203]: Found opcode in column 1. (NOP)
+0098   0000           00261 NOP
+0099   0008           00262         Return
+                      00263 ;;;;;;; Delay subroutine ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+                      00264 ; This subroutine to get a delay with 120 Sec.
+009A                  00265 DELLY_FLUID_2
+Warning[203]: Found opcode in column 1. (MOVLW)
+009A   3067           00266 MOVLW 0X67
+Warning[203]: Found opcode in column 1. (MOVWF)
+009B   00A0           00267 MOVWF DCounter10
+Warning[203]: Found opcode in column 1. (MOVLW)
+009C   30E7           00268 MOVLW 0Xe7
+Warning[203]: Found opcode in column 1. (MOVWF)
+009D   00A1           00269 MOVWF DCounter20
+Warning[203]: Found opcode in column 1. (MOVLW)
+009E   30F2           00270 MOVLW 0Xf2
+Warning[203]: Found opcode in column 1. (MOVWF)
+009F   00A2           00271 MOVWF DCounter30
+Warning[203]: Found opcode in column 1. (MOVLW)
+00A0   3006           00272 MOVLW 0X06
+Warning[203]: Found opcode in column 1. (MOVWF)
+00A1   00A3           00273 MOVWF DCounter40
+00A2                  00274 LOOP2
+Warning[203]: Found opcode in column 1. (DECFSZ)
+00A2   0BA0           00275 DECFSZ DCounter10, 1
+Warning[203]: Found opcode in column 1. (GOTO)
+00A3   28A2           00276 GOTO LOOP2
+Warning[203]: Found opcode in column 1. (DECFSZ)
+00A4   0BA1           00277 DECFSZ DCounter20, 1
+Warning[203]: Found opcode in column 1. (GOTO)
+00A5   28A2           00278 GOTO LOOP2
+Warning[203]: Found opcode in column 1. (DECFSZ)
+00A6   0BA2           00279 DECFSZ DCounter30, 1
+Warning[203]: Found opcode in column 1. (GOTO)
+00A7   28A2           00280 GOTO LOOP2
+MPASM  5.51                     ASSIGMENT.ASM   12-19-2022  16:26:40         PAGE 10
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+Warning[203]: Found opcode in column 1. (DECFSZ)
+00A8   0BA3           00281 DECFSZ DCounter40, 1
+Warning[203]: Found opcode in column 1. (GOTO)
+00A9   28A2           00282 GOTO LOOP2
+Warning[203]: Found opcode in column 1. (NOP)
+00AA   0000           00283 NOP
+Warning[203]: Found opcode in column 1. (NOP)
+00AB   0000           00284 NOP
+Warning[203]: Found opcode in column 1. (RETURN)
+00AC   0008           00285 RETURN
+                      00286 ; ;;;;;;;  Bottle_Labeling subroutine ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+                      00287 ; This subroutine start labeling and counts the number of labeled bottles
+                      00288 
+00AD                  00289 Bottle_Labeling
+00AD   108B           00290         bcf         INTCON, INTF        ;Clear the External interrupt flag
+                      00291 ;       write the code here
+00AE   28B3           00292         goto            POLL            ;Check for another interrupt
+                      00293 ;**********************************************************
+00AF                  00294 INT_SVC
+Warning[206]: Found call to macro in column 1. (push)
+                      00295 push
+                          M 
+00AF   008C               M         movwf           WTemp           ; WTemp must be reserved in all banks
+00B0   0E03               M         swapf           STATUS,W                ; store in W without affecting status bits
+00B1   1283               M         banksel StatusTemp              ; select StatusTemp bank
+00B2   008D               M         movwf           StatusTemp              ; save STATUS
+00B3                  00296 POLL
+00B3   188B           00297         btfsc           INTCON, INTF    ; Check for an External Interrupt
+00B4   28AD           00298         goto            Bottle_Labeling
+                      00299 ;       btfsc   ...                                     ; Check for another interrupt
+                      00300 ;       call    ...
+                      00301 ;       btfsc   ...                                     ; Check for another interrupt
+                      00302 ;       call    ...
+                      00303         pop
+                          M 
+00B5   1283               M         banksel StatusTemp              ; point to StatusTemp bank
+00B6   0E0D               M         swapf           StatusTemp,W            ; unswap STATUS nibbles into W  
+00B7   0083               M         movwf           STATUS          ; restore STATUS
+00B8   0E8C               M         swapf           WTemp,F         ; unswap W nibbles
+00B9   0E0C               M         swapf           WTemp,W         ; restore W without affecting STATUS
+00BA   0009           00304         retfie
+                      00305 
+                      00306 ;**********************************************************
+00BB                  00307 FINISH
+Warning[203]: Found opcode in column 1. (NOP)
+00BB   0000           00308 NOP
+                      00309         End
+MPASM  5.51                     ASSIGMENT.ASM   12-19-2022  16:26:40         PAGE 11
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+Bottle_Labeling                   000000AD
+C                                 00000000
+COUNTER_HEATER                    00000025
+DC                                00000001
+DCounter1                         0000000C
+DCounter10                        00000020
+DCounter100                       00000026
+DCounter1000                      00000030
+DCounter11                        00000034
+DCounter2                         0000000D
+DCounter20                        00000021
+DCounter200                       00000027
+DCounter2000                      00000031
+DCounter22                        00000035
+DCounter3                         0000000E
+DCounter30                        00000022
+DCounter300                       00000028
+DCounter3000                      00000032
+DCounter33                        00000036
+DCounter4                         0000000F
+DCounter40                        00000023
+DCounter400                       00000029
+DCounter4000                      00000033
+DCounter44                        00000037
+DELAY_80S                         00000051
+DELAY_FLUIDA_1                    00000088
+DELAY_HAETER                      00000075
+DELAY_STATUSB_FLUIDA              00000062
+DELLY_FLUID_2                     0000009A
+EEADR                             00000009
+EECON1                            00000088
+EECON2                            00000089
+EEDATA                            00000008
+EEIE                              00000006
+EEIF                              00000004
+F                                 00000001
+FINISH                            000000BB
+FSR                               00000004
+GIE                               00000007
+HEATER                            00000024
+INDF                              00000000
+INTCON                            0000000B
+INTE                              00000004
+INTEDG                            00000006
+INTF                              00000001
+INT_SVC                           000000AF
+IRP                               00000007
+Initial                           00000009
+LEDRUN                            0000001A
+LOOP                              00000059
+LOOP2                             000000A2
+LOOP3                             0000007D
+LOOP_HEATER                       0000002C
+MPASM  5.51                     ASSIGMENT.ASM   12-19-2022  16:26:40         PAGE 12
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+LOOP_HEATER1                      0000003C
+Main                              00000005
+MainLoop                          00000006
+NOT_PD                            00000003
+NOT_RBPU                          00000007
+NOT_TO                            00000004
+OPTION_REG                        00000081
+OTHERWISE                         00000032
+PCL                               00000002
+PCLATH                            0000000A
+POLL                              000000B3
+PORTA                             00000005
+PORTB                             00000006
+PS0                               00000000
+PS1                               00000001
+PS2                               00000002
+PSA                               00000003
+RA0                               00000000
+RA1                               00000001
+RA2                               00000002
+RA3                               00000003
+RA4                               00000004
+RB0                               00000000
+RB1                               00000001
+RB2                               00000002
+RB3                               00000003
+RB4                               00000004
+RB5                               00000005
+RB6                               00000006
+RB7                               00000007
+RBIE                              00000003
+RBIF                              00000000
+RD                                00000000
+RP0                               00000005
+RP1                               00000006
+SELECTION                         0000001E
+START_MACHINE                     00000016
+STATUS                            00000003
+STATUSB                           00000035
+STATUSC                           00000042
+STATUS_A                          00000023
+StatusTemp                        0000000D
+T0CS                              00000005
+T0IE                              00000005
+T0IF                              00000002
+T0SE                              00000004
+TMR0                              00000001
+TMR0IE                            00000005
+TMR0IF                            00000002
+TRISA                             00000085
+TRISA0                            00000000
+TRISA1                            00000001
+TRISA2                            00000002
+MPASM  5.51                     ASSIGMENT.ASM   12-19-2022  16:26:40         PAGE 13
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+TRISA3                            00000003
+TRISA4                            00000004
+TRISB                             00000086
+TRISB0                            00000000
+TRISB1                            00000001
+TRISB2                            00000002
+TRISB3                            00000003
+TRISB4                            00000004
+TRISB5                            00000005
+TRISB6                            00000006
+TRISB7                            00000007
+W                                 00000000
+WR                                00000001
+WREN                              00000002
+WRERR                             00000003
+WTemp                             0000000C
+Z                                 00000002
+_CONFIG                           00002007
+_CP_OFF                           00003FFF
+_CP_ON                            0000000F
+_DEVID1                           00002006
+_FOSC_EXTRC                       00003FFF
+_FOSC_HS                          00003FFE
+_FOSC_LP                          00003FFC
+_FOSC_XT                          00003FFD
+_HS_OSC                           00003FFE
+_IDLOC0                           00002000
+_IDLOC1                           00002001
+_IDLOC2                           00002002
+_IDLOC3                           00002003
+_LP_OSC                           00003FFC
+_PWRTE_OFF                        00003FFF
+_PWRTE_ON                         00003FF7
+_RC_OSC                           00003FFF
+_WDTE_OFF                         00003FFB
+_WDTE_ON                          00003FFF
+_WDT_OFF                          00003FFB
+_WDT_ON                           00003FFF
+_XT_OSC                           00003FFD
+__16F84A                          00000001
+__DEBUG                           1
+pop                               
+push                              
+MPASM  5.51                     ASSIGMENT.ASM   12-19-2022  16:26:40         PAGE 14
+
+
+MEMORY USAGE MAP ('X' = Used,  '-' = Unused)
+
+
+0000 : XX--XXXXXXXXXXXX XXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXX
+0040 : XXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXX
+0080 : XXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXX XXXXXXXXXXXX----
+
+All other memory blocks unused.
+
+Program Memory Words Used:   186
+Program Memory Words Free:   838
+
+
+Errors   :    18
+Warnings :   162 reported,     0 suppressed
+Messages :    15 reported,     0 suppressed
+
+
