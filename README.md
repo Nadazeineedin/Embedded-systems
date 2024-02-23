@@ -14,3 +14,5 @@ PIC16F84A microcontroller 10 MHz oscillator Three pumps with flow rates of 60, 4
 Getting started:
 
 Clone the repository. Install the necessary libraries. Connect the hardware components according to the schematic. Program the PIC16F84A microcontroller with the provided code. Run the program and test the different mixing modes.
+
+NOTE: This project has beed done with my collegue Wael JadAllah
